@@ -4,6 +4,8 @@
 
 
 # Импортируем:
+import os
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 
 # Импортируем ядро:
@@ -18,3 +20,14 @@ from .gdf import math
 from .gdf import input
 from .gdf import utils
 
+
+# Получить версию движка:
+def get_version() -> str: return "v0.1"
+
+
+# Импортируем скрипты:
+from . import crash_handler
+
+
+# Импортируем основной функционал из скриптов:
+from .crash_handler import CrashHandler
