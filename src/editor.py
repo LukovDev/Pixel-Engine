@@ -4,6 +4,7 @@
 
 
 # Импортируем:
+import core
 import engine
 from engine import *
 from engine.gdf.graphics import *
@@ -14,10 +15,11 @@ if __name__ == "__main__": from main import main ; main()
 # Класс редактора:
 class EditorApplication(Window):
     def __init__(self) -> None:
-        self.project = None
+        self.project     = None
+        self.loaded_data = {}
 
     # Инициализировать данные проекта:
-    def init_project_data(self, project: dict) -> None:
+    def init_project_data(self, project: core.ProjectManager) -> None:
         self.project = project
     
     # Инициализировать открываемую сцену:
@@ -27,7 +29,7 @@ class EditorApplication(Window):
     # Инициализировать окно:
     def init(self) -> None:
         super().__init__(
-            title      = f"Pixel Engine - Editor [v0.1] - Project: {self.project['name']}",
+            title      = f"Pixel Engine - Editor [v0.1] - Project: {self.project.config['name']}",
             icon       = files.load_image("./data/icons/logo/icon-black.png"),
             size       = vec2(960, 540),
             vsync      = False,

@@ -1,0 +1,28 @@
+{
+    "name": "My Project",
+    "description": "My Game on the Pixel Engine game engine.",
+    "settings": {
+        "title": "My Project",
+        "runapp-icon": "icons/logo/icon-black.png",
+        "build-icon":  ".proj/icons/logo/icon.ico",
+        "win-size": [960, 540],
+        "min-win-size": [0, 0],
+        "max-win-size": [-1, -1],
+        "vsync": false,
+        "fps": 60,
+        "titlebar": true,
+        "resizable": true,
+        "fullscreen": false,
+        "samples": 8,
+        "console-disabled": true,
+        "version": "v1.0",
+        "company": "-"
+    },
+    "data": [],
+    "meta": {
+        "engine-version": "v0.1",
+        "gdf-version": "v1.0-release",
+        "editor-version": "v0.1"
+    },
+    "cache": []
+}
