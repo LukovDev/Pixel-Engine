@@ -15,13 +15,19 @@ if __name__ == "__main__": from main import main ; main()
 # Класс редактора:
 class EditorApplication(Window):
     def __init__(self) -> None:
-        self.project     = None
-        self.loaded_data = {}
+        self.project = None
+        self.data_inited = False
 
-    # Инициализировать данные проекта:
-    def init_project_data(self, project: core.ProjectManager) -> None:
+    # Инициализируем загруженные данные:
+    def init_loaded_data(self, project: core.ProjectManager, window: Window) -> None:
         self.project = project
-    
+
+        # Превращаем все ложные текстуры (изображения) в нормальные настоящие текстуры:
+        for dictdata in self.project.loaded_data:
+            if dictdata["type"] == "texture": dictdata["data"] = Texture(dictdata["data"])
+            window.render(1/60)  # Обновляем окно лаунчера редактора чтобы оно сильно не зависало.
+        self.data_inited = True
+
     # Инициализировать открываемую сцену:
     def init_open_scene(self) -> None:
         pass
