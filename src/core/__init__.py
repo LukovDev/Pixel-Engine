@@ -4,6 +4,7 @@
 
 
 # Импортируем скрипты:
+from . import editor_const
 from . import project_manager
 
 

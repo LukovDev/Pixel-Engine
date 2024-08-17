@@ -32,6 +32,7 @@ class ProjectManager:
         # Для загрузки данных проекта:
         self.loaded_data   = []
         self.bad_loaded    = []
+        self.unknown_type  = []
         self.load_progbar  = 0
         self.load_process  = ""
         self.load_is_done  = False
@@ -144,6 +145,7 @@ class ProjectManager:
                 files = self.config["data"]
 
                 # Проход 1 - Подсчёт общего размера данных и проверка существования файлов:
+                self.engine.Debug.log("Loading project data: Pass 1 - Analysis of uploaded data...", ProjectManager)
                 self.load_process, total_size, valid_files = "Pass 1 - Analysis of uploaded data", 0, []
                 for file_info in files:
                     for type, path in file_info.items():
@@ -154,6 +156,11 @@ class ProjectManager:
                         else: self.bad_loaded.append(file_info)
                         self.load_progbar += 100/len(files)
                         time.sleep((1/len(files))/4)
+                if self.bad_loaded:
+                    self.engine.Debug.log(
+                        f"Loading project data: Pass 1: File not found: {self.bad_loaded}",
+                        ProjectManager
+                    )
 
                 # Сортировка списка по размеру файла от большего к меньшему:
                 valid_files = [i[0] for i in sorted(valid_files, key=lambda x: x[1], reverse=True)]
@@ -162,6 +169,7 @@ class ProjectManager:
                 self.load_progbar = 0
 
                 # Проход 2 - Основной цикл загрузки:
+                self.engine.Debug.log("Loading project data: Pass 2 - Loading data...", ProjectManager)
                 self.load_process = "Pass 2 - Loading data" ; time.sleep(1)
                 for file_info in valid_files:
                     for type, path in file_info.items():
@@ -171,6 +179,11 @@ class ProjectManager:
                         file_data = bytearray()  # Наш загружаемый файл.
                         # Автоматический размер чанка данных (от 4кб до 64кб):
                         chunk_size = int(min(max(4096, file_size // 100), 65536))
+
+                        self.engine.Debug.log(
+                            f"Loading project data: [Type: {type} | Chunk size={chunk_size} | Loading: {full_path}]",
+                            ProjectManager
+                        )
 
                         # Загружаем файл:
 
@@ -236,15 +249,20 @@ class ProjectManager:
                             self.loaded_data.append({"type": type, "path": path, "data": font})
 
                         # Неизвестный тип файла:
-                        else: self.bad_loaded.append(file_info)
+                        else: self.unknown_type.append(file_info)
+
+                if self.unknown_type:
+                    self.engine.Debug.log(f"Loading project data: Unknown types: {self.unknown_type}", ProjectManager)
 
                 # Говорим что всё загружено:
+                self.engine.Debug.log("Loading project data: Done!", ProjectManager)
                 self.load_progbar = 100
                 self.load_process = "Done!"
                 time.sleep(1.0)
                 self.load_process = "Preparation of uploaded data..."
                 self.load_is_done = True
             except Exception as error:
+                self.engine.Debug.error(f"Loading project data: ERROR: {error}", ProjectManager)
                 self.error_loading = error
 
         # Запускаем загрузку данных:

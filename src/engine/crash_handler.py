@@ -12,13 +12,14 @@ if True:
     import tkinter as tk
     import platform
     import traceback
+    from . import debug
     from . import gdf
     from . import get_version
 
 
 # Обработчик ошибок движка:
 class CrashHandler:
-    def __init__(self, source: str, error: Exception, title_text: str = "Pixel Engine has been Crashed!") -> None:
+    def __init__(self, source: any, error: Exception, title_text: str = "Pixel Engine has been Crashed!") -> None:
         try: pygame.quit()
         except Exception: pass
 
@@ -48,6 +49,8 @@ class CrashHandler:
         traceback_text = "".join(traceback.format_exception(type(error), error, error.__traceback__))
         file_name      = traceback.extract_tb(error.__traceback__)[-1].filename
         line_number    = traceback.extract_tb(error.__traceback__)[-1].lineno
+
+        debug.Debug.fatal(f"{type(error).__name__}: {error}", source)
 
         # Текст кнопки для копирования ошибки:
         copy_button_text = "copy the error"

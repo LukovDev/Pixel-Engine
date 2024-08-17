@@ -19,6 +19,7 @@ from editor import EditorApplication
 # Класс лаунчера редактора:
 class EditorLauncher(Window):
     def __init__(self) -> None:
+        engine.Debug.log("LaunchEditor: Class created...", EditorLauncher)
         self.input        = None
         self.background   = None
         self.icons        = None
@@ -27,14 +28,17 @@ class EditorLauncher(Window):
         self.texts        = None
         self.run_key      = False
         self.sprite_pbar  = Sprite2D()
-        self.editor       = EditorApplication()
         self.error_inter  = None
+
+        engine.Debug.log("LaunchEditor: Creating Editor class...", EditorLauncher)
+        self.editor = EditorApplication()
 
         # Создаём окно:
         self.init()
 
     # Создать окно:
     def init(self) -> None:
+        engine.Debug.log("LaunchEditor: Initializing the window...", EditorLauncher)
         super().__init__(
             title      = "Editor Launcher",
             icon       = files.load_image("./data/icons/logo/icon-black.png"),
@@ -50,10 +54,21 @@ class EditorLauncher(Window):
             samples    = 16
         )
 
+    # Инициализируем загруженные данные:
+    def init_loaded_data(self) -> None:
+        # Превращаем все ложные текстуры (изображения) в нормальные настоящие текстуры:
+        for dictdata in self.project.loaded_data:
+            if dictdata["type"] == "texture": dictdata["data"] = Texture(dictdata["data"])
+            self.window.render(0)  # Обновляем окно лаунчера редактора чтобы оно сильно не зависало.
+
     # Открыть редактор:
     def open_editor(self) -> None:
-        # Передаём данные проекта редактору:
-        self.editor.init_loaded_data(self.project, self.window)
+        self.editor.project = self.project
+
+        # Инициализируем загруженные данные:
+        engine.Debug.log("LaunchEditor: Initializing the uploaded data...", EditorLauncher)
+        self.init_loaded_data()
+        engine.Debug.log("LaunchEditor: Initializing the uploaded data: Done!", EditorLauncher)
 
         self.window.set_visible(False)  # Скрываем это окно.
         self.window.clear(0, 0, 0)      # Очищаем окно для редактора.
@@ -62,9 +77,12 @@ class EditorLauncher(Window):
         self.project.load_progbar, self.project.load_process = 0, ""
 
         # Инициализируем сцену:
+        engine.Debug.log("LaunchEditor: Initialization of the opening scene...", EditorLauncher)
         self.editor.init_open_scene()
+        engine.Debug.log("LaunchEditor: Initialization of the opening scene: Done!", EditorLauncher)
 
         # Запускаем редактор:
+        engine.Debug.log("LaunchEditor: Launch the editor. Switching to the editor...", EditorLauncher)
         try:
             self.editor.init()
         except Exception as error:
@@ -75,6 +93,8 @@ class EditorLauncher(Window):
 
     # Вызывается при создании окна:
     def start(self) -> None:
+        engine.Debug.log("LaunchEditor: Initializing the window: Done!", EditorLauncher)
+
         # Обработчик ввода:
         self.input = gdf.input.InputHandler(self.window)
 
@@ -90,7 +110,9 @@ class EditorLauncher(Window):
         self.font = FontGenerator(files.load_font("./data/fonts/sans-serif.ttf"))
 
         # Загружаем данные о проекте:
+        engine.Debug.log("LaunchEditor: Loading project config file...", EditorLauncher)
         self.project = core.ProjectManager(engine).load("./data/templates/New Project/")
+        engine.Debug.log("LaunchEditor: Loading project config file: Done!", EditorLauncher)
 
         # Тексты:
         prjname = self.project.config["name"].strip()
@@ -106,6 +128,7 @@ class EditorLauncher(Window):
             self.texts[key] = self.font.get_texture_text(val[0], val[1])
 
         # Загружаем данные проекта:
+        engine.Debug.log("LaunchEditor: Loading project data...", EditorLauncher)
         self.project.load_data()
 
         # Обновляем заголовок окна:
@@ -188,6 +211,7 @@ def first_steps() -> None:
     if os.path.isdir(os.path.dirname(sys.argv[0])): os.chdir(os.path.dirname(sys.argv[0]))           # 1.
     if os.getcwd()[len(os.getcwd())-len("src"):] == "src": os.chdir("../")                           # 2.
     if os.path.isdir("./data/") and not os.path.isdir("./data/editor/"): os.mkdir("./data/editor/")  # 3.
+    if os.path.isdir("./data/") and not os.path.isdir("./data/logs/"):   os.mkdir("./data/logs/")    # 4.
 
     """
         1. Изменяет текущую рабочую директорию на директорию, содержащую исполняемый файл скрипта.
@@ -196,6 +220,7 @@ def first_steps() -> None:
            Это может быть полезно, если скрипт находится в поддиректории с именем "src", и
            нужно перейти в родительскую директорию для выполнения определённых действий.
         3. Если папки editor нет в папке data, то создаём её. В папке editor хранятся данные и настройки редактора.
+        4. Если папки logs нет в папке data, то создаём её. В папке logs хранится отладка работы движка и редактора.
     """
 
 
@@ -209,7 +234,13 @@ def launch_editor() -> None:
 
 # Основная функция:
 def main() -> None:
+    engine.Debug.log("Program started...")
+
+    engine.Debug.log("First Steps: Performing the first steps of initializing the launch")
     first_steps()
+    engine.Debug.log("First Steps: Done!")
+
+    engine.Debug.log("LaunchEditor: Launching the editor launch preparation program...")
     launch_editor()
 
 

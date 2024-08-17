@@ -15,25 +15,21 @@ if __name__ == "__main__": from main import main ; main()
 # Класс редактора:
 class EditorApplication(Window):
     def __init__(self) -> None:
+        engine.Debug.log("Editor: Editor class has been created.", EditorApplication)
+
+        # Для лаунчера редактора:
         self.project = None
-        self.data_inited = False
 
-    # Инициализируем загруженные данные:
-    def init_loaded_data(self, project: core.ProjectManager, window: Window) -> None:
-        self.project = project
-
-        # Превращаем все ложные текстуры (изображения) в нормальные настоящие текстуры:
-        for dictdata in self.project.loaded_data:
-            if dictdata["type"] == "texture": dictdata["data"] = Texture(dictdata["data"])
-            window.render(1/60)  # Обновляем окно лаунчера редактора чтобы оно сильно не зависало.
-        self.data_inited = True
+        # Основное:
+        self.editor_config = core.editor_const.config
 
     # Инициализировать открываемую сцену:
     def init_open_scene(self) -> None:
-        pass
+        engine.Debug.log("Editor: Initialization of the opening scene. Opening the scene...", EditorApplication)
 
     # Инициализировать окно:
     def init(self) -> None:
+        engine.Debug.log("Editor: Initializing the window...", EditorApplication)
         super().__init__(
             title      = f"Pixel Engine - Editor [v0.1] - Project: {self.project.config['name']}",
             icon       = files.load_image("./data/icons/logo/icon-black.png"),
@@ -51,7 +47,7 @@ class EditorApplication(Window):
 
     # Вызывается при создании окна:
     def start(self) -> None:
-        pass
+        engine.Debug.log("Editor: Initializing the window: Done!", EditorApplication)
 
     # Вызывается каждый кадр (игровой цикл):
     def update(self, delta_time: float, event_list: list) -> None:

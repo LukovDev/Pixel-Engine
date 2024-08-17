@@ -36,7 +36,9 @@ def get_meta_for_project() -> dict:
 
 # Импортируем скрипты:
 from . import crash_handler
+from . import debug
 
 
 # Импортируем основной функционал из скриптов:
 from .crash_handler import CrashHandler
+from .debug         import Debug
