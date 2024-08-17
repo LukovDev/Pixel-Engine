@@ -6,7 +6,6 @@
 # Импортируем:
 import os
 import sys
-import time
 
 import core
 import engine
@@ -57,7 +56,7 @@ class EditorLauncher(Window):
     # Инициализируем загруженные данные:
     def init_loaded_data(self) -> None:
         # Превращаем все ложные текстуры (изображения) в нормальные настоящие текстуры:
-        for dictdata in self.project.loaded_data:
+        for dictdata in self.project.data:
             if dictdata["type"] == "texture": dictdata["data"] = Texture(dictdata["data"])
             self.window.render(0)  # Обновляем окно лаунчера редактора чтобы оно сильно не зависало.
 
@@ -70,8 +69,7 @@ class EditorLauncher(Window):
         self.init_loaded_data()
         engine.Debug.log("LaunchEditor: Initializing the uploaded data: Done!", EditorLauncher)
 
-        self.window.set_visible(False)  # Скрываем это окно.
-        self.window.clear(0, 0, 0)      # Очищаем окно для редактора.
+        self.window.exit()  # Закрываем окно.
 
         # Обнуляем загрузочные данные:
         self.project.load_progbar, self.project.load_process = 0, ""
@@ -87,9 +85,6 @@ class EditorLauncher(Window):
             self.editor.init()
         except Exception as error:
             engine.CrashHandler(EditorApplication, error)
-
-        # Завершаем работу программы:
-        sys.exit()
 
     # Вызывается при создании окна:
     def start(self) -> None:
@@ -143,18 +138,21 @@ class EditorLauncher(Window):
             engine.CrashHandler(core.ProjectManager.load_data, self.project.error_loading)
             sys.exit()
 
+        # Обрабатываем нажатие на крестик:
+        size = self.window.get_size()
+        if gdf.utils.Intersects.point_rectangle(self.input.get_mouse_pos(), [size.x-32, 32-24, 24, 24]):
+            self.exit_hovered = True
+            if self.input.get_mouse_up()[0]:
+                if not self.project.load_is_done:
+                    engine.Debug.warning("Loading project data: Data loading was interrupted by closing the program.")
+                self.window.exit()
+        else: self.exit_hovered = False
+
         # Если мы загрузили все необходимые данные, запускаем редактор:
         if self.project.load_is_done:
             # Ключ нужен чтобы отрисовать кадр когда шкала на 100% заполнена и только потом открываем редактор.
             if self.run_key: self.open_editor()
             else: self.run_key = True
-
-        # Обрабатываем нажатие на крестик:
-        size = self.window.get_size()
-        if gdf.utils.Intersects.point_rectangle(self.input.get_mouse_pos(), [size.x-32, 32-24, 24, 24]):
-            self.exit_hovered = True
-            if self.input.get_mouse_up()[0]: self.window.exit()
-        else: self.exit_hovered = False
 
     # Вызывается каждый кадр (игровая отрисовка):
     def render(self, delta_time: float) -> None:
@@ -243,7 +241,13 @@ def main() -> None:
     engine.Debug.log("LaunchEditor: Launching the editor launch preparation program...")
     launch_editor()
 
+    engine.Debug.log("Closing the program...")
+    sys.exit()
+
 
 # Если этот скрипт запускают:
 if __name__ == "__main__":
+    if os.path.isfile("./build/config.json") or "--console-support" in sys.argv:
+        if "--console-support" in sys.argv: engine.Debug.init_debug()
+        elif not engine.gdf.files.load_json("./build/config.json")["console-disabled"]: engine.Debug.init_debug()
     main()

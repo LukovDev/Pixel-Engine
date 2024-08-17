@@ -17,7 +17,8 @@ _log_list_ = []
 class ForeColors:
     # Цвета:
     WT = Fore.LIGHTWHITE_EX
-    YW = Fore.LIGHTYELLOW_EX
+    LY = Fore.LIGHTYELLOW_EX
+    YW = Fore.YELLOW
     MT = Fore.LIGHTMAGENTA_EX
     RD = Fore.RED
     CN = Fore.LIGHTCYAN_EX
@@ -26,6 +27,11 @@ class ForeColors:
 
 # Класс отладки:
 class Debug:
+    # Инициализируем вывод отладочных сообщений в консоль:
+    @staticmethod
+    def init_debug() -> None:
+        os.system("cls") if os.name == "nt" else os.system("clear")
+
     # Сообщение отладки:
     @staticmethod
     def log(message: str, by: str = "") -> None:
@@ -36,12 +42,27 @@ class Debug:
         by   = f"{by}: " if by else ""
 
         text       = f"[{time}] [{type}]: {by}{message}"
-        color_text = f"{сlr.WT}[{сlr.YW}{time}{сlr.WT}] [{сlr.MT}{type}{сlr.WT}]: {сlr.CN}{by}{сlr.WT}{message}{сlr.RT}"
+        color_text = f"{сlr.WT}[{сlr.LY}{time}{сlr.WT}] [{сlr.MT}{type}{сlr.WT}]: {сlr.CN}{by}{сlr.WT}{message}{сlr.RT}"
 
         _log_list_.append(text)
         print(color_text)
 
-    # Сообщение ошибки:
+    # Сообщение-предупреждение:
+    @staticmethod
+    def warning(message: str, by: str = "") -> None:
+        global _log_list_
+        сlr  = ForeColors
+        time = datetime.now().strftime("%H:%M:%S")
+        type = "WARN"
+        by   = f"{by}: " if by else ""
+
+        text       = f"[{time}] [{type}]: {by}{message}"
+        color_text = f"{сlr.WT}[{сlr.LY}{time}{сlr.WT}] [{сlr.YW}{type}{сlr.WT}]: {сlr.CN}{by}{сlr.YW}{message}{сlr.RT}"
+
+        _log_list_.append(text)
+        print(color_text)
+
+    # Сообщение об ошибки:
     @staticmethod
     def error(message: str, by: str = "") -> None:
         global _log_list_
@@ -51,12 +72,12 @@ class Debug:
         by   = f"{by}: " if by else ""
 
         text       = f"[{time}] [{type}]: {by}{message}"
-        color_text = f"{сlr.WT}[{сlr.YW}{time}{сlr.WT}] [{сlr.RD}{type}{сlr.WT}]: {сlr.CN}{by}{сlr.RD}{message}{сlr.RT}"
+        color_text = f"{сlr.WT}[{сlr.LY}{time}{сlr.WT}] [{сlr.RD}{type}{сlr.WT}]: {сlr.CN}{by}{сlr.RD}{message}{сlr.RT}"
 
         _log_list_.append(text)
         print(color_text)
 
-    # Сообщение фатальной ошибки:
+    # Сообщение о фатальной ошибки:
     @staticmethod
     def fatal(message: str, by: str = "") -> None:
         global _log_list_
@@ -84,4 +105,4 @@ class Debug:
 
 
 # Автосохранение журнала при закрытии программы:
-import atexit ; atexit.register(lambda: (Debug.log("Closing the program..."), Debug.save("./data/logs/")))
+import atexit ; atexit.register(lambda: Debug.save("./data/logs/"))

@@ -1,6 +1,6 @@
 @echo off
 
-python .\src\main.py
+python .\src\main.py --console-support
 
 echo.
 pause

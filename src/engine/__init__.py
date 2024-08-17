@@ -26,7 +26,7 @@ def get_version() -> str: return "v0.1"
 
 
 # Получить мета данные для проекта:
-def get_meta_for_project() -> dict:
+def get_meta_info() -> dict:
     return {
         "engine-version": get_version(),
         "gdf-version": gdf.get_version(),

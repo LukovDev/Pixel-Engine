@@ -29,10 +29,16 @@ class ProjectManager:
         self.path   = ""
         self.config = None
 
+        # Для загрузки данных сцен:
+        self.scenes     = []
+        self.bad_scenes = []
+
         # Для загрузки данных проекта:
-        self.loaded_data   = []
-        self.bad_loaded    = []
-        self.unknown_type  = []
+        self.data         = []
+        self.bad_loaded   = []
+        self.unknown_type = []
+
+        # В целом для загрузки всех данных проекта:
         self.load_progbar  = 0
         self.load_process  = ""
         self.load_is_done  = False
@@ -48,6 +54,20 @@ class ProjectManager:
         # Создаём папку проекта:
         os.makedirs(project_path, exist_ok=True)
 
+        # Проверяем, существует ли пакет шаблона проекта:
+        if not os.path.isfile("./data/templates/template.pxpkg"):
+            raise ProjectError(
+                "The required template package (template.pxpkg) is missing to generate the project. "
+                "The editor files are corrupted. Recommended to reinstall the program."
+            )
+
+        # Проверяем, существует ли пакет движка проекта:
+        if not os.path.isfile("./data/templates/engine.pxpkg"):
+            raise ProjectError(
+                "The required engine package (engine.pxpkg) is missing to generate the project. "
+                "The editor files are corrupted. Recommended to reinstall the program."
+            )
+
         # Копируем шаблон проекта:
         with zipfile.ZipFile("./data/templates/template.pxpkg", "r") as z:
             z.extractall(project_path)
@@ -62,7 +82,8 @@ class ProjectManager:
             "data"    - Файл данных:      Файл который требует декодирования    (Использует функционал ядра).
             "music"   - Музыкальный файл: Файл который не требует декодирования (Использует Music).
             "sound"   - Звуковой файл:    Файл который не требует декодирования (Использует Sound).
-            "texture" - Текстурный файл:  Файл который не требует декодирования (Использует Image).
+            "image"   - Файл изображения: Файл который не требует декодирования (Использует Image).
+            "texture" - Текстурный файл:  Файл который не требует декодирования (Использует Image а потом Texture).
             "font"    - Шрифтный файл:    Файл который не требует декодирования (Использует FontFile).
         """
 
@@ -87,9 +108,16 @@ class ProjectManager:
                 "version": "v1.0",
                 "company": "-"
             },
+            "scenes": [  # Список сцен.
+                {
+                    "id": 0,               # Идентификатор сцены и её порядковый номер.
+                    "name": "Main Scene",  # Название сцены.
+                    "objects": []          # Список объектов.
+                }
+            ],
             "data": [],    # Данные. Список файлов проекта. Файлы из списка подгружаются при запуске редактора.
             "meta": meta,  # Метаданные. Хранит разные данные которые использует движок при запуске проекта.
-            "cache": []    # Кэш. Хранит любую информацию, которую надо сохранить, не меняя структуру конф.файла.
+            "cache": []    # Кэш. Хранит любую информацию, которую надо сохранить, не меняя структуру конфиг файла.
         }
 
         # Создаём конфигурационный файл в папке проекта:
@@ -128,9 +156,18 @@ class ProjectManager:
 
     # Сохранить проект:
     def save(self) -> "ProjectManager":
+        # Проверяем, существует ли проект:
+        if not os.path.isdir(self.path):
+            raise ProjectError("The project could not be saved. The project folder has been moved or deleted.")
+
+        # Проверяем, существует ли проект:
+        if not os.path.isdir(os.path.join(self.path, ".proj")):
+            raise ProjectError("The project could not be saved. The project folder is corrupted.")
+
         # Пересоздаём конфигурационный файл:
-        with open(os.path.join(self.path, ".proj/project.json", encoding="utf-8"), "w+") as f:
+        with open(os.path.join(self.path, ".proj/project.json"), "w+", encoding="utf-8") as f:
             json.dump(self.config, f, indent=4)
+
         return self
 
     # Загрузить данные проекта:
@@ -195,7 +232,7 @@ class ProjectManager:
                                     if not chunk: break
                                     file_data.extend(chunk)
                                     self.load_progbar += (len(chunk)/total_size)*100
-                            self.loaded_data.append({"type": type, "path": path, "data": file_data.decode("utf-8")})
+                            self.data.append({"type": type, "path": path, "data": file_data.decode("utf-8")})
 
                         # Файл данных:
                         elif type == "data":
@@ -205,7 +242,7 @@ class ProjectManager:
                                     if not chunk: break
                                     file_data.extend(chunk)
                                     self.load_progbar += (len(chunk)/total_size)*100
-                            self.loaded_data.append({"type": type, "path": path, "data": file_data})
+                            self.data.append({"type": type, "path": path, "data": file_data})
 
                         # Музыкальный файл:
                         elif type == "music":
@@ -216,16 +253,16 @@ class ProjectManager:
                                     file_data.extend(chunk)
                                     self.load_progbar += (len(chunk)/total_size)*100
                             music = self.engine.gdf.audio.Music().load(io.BytesIO(file_data))
-                            self.loaded_data.append({"type": type, "path": path, "data": music})
+                            self.data.append({"type": type, "path": path, "data": music})
 
                         # Звуковой файл:
                         elif type == "sound":
                             sound = self.engine.gdf.audio.Sound().load(full_path)
                             self.load_progbar += (file_size/total_size)*100
-                            self.loaded_data.append({"type": type, "path": path, "data": sound})
+                            self.data.append({"type": type, "path": path, "data": sound})
 
-                        # Файл изображения:
-                        elif type == "texture":
+                        # Файл изображения / текстуры (во время загрузки они одинаковые):
+                        elif type == "image" or type == "texture":
                             with open(full_path, "rb") as f:
                                 while True:
                                     chunk = f.read(chunk_size)
@@ -233,8 +270,10 @@ class ProjectManager:
                                     file_data.extend(chunk)
                                     self.load_progbar += (len(chunk)/total_size)*100
                             self.load_process = f"Converting: {os.path.basename(full_path)}"
+                            self.engine.Debug.log(
+                                f"Loading project data: Converting: {os.path.basename(full_path)}...", ProjectManager)
                             image = self.engine.gdf.graphics.Image((0, 0), pygame.image.load(io.BytesIO(file_data)))
-                            self.loaded_data.append({"type": type, "path": path, "data": image})
+                            self.data.append({"type": type, "path": path, "data": image})
 
                         # Файл шрифта:
                         elif type == "font":
@@ -246,7 +285,7 @@ class ProjectManager:
                                     file_data.extend(chunk)
                                     self.load_progbar += (len(chunk)/total_size)*100
                             font.data = file_data
-                            self.loaded_data.append({"type": type, "path": path, "data": font})
+                            self.data.append({"type": type, "path": path, "data": font})
 
                         # Неизвестный тип файла:
                         else: self.unknown_type.append(file_info)
