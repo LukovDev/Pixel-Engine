@@ -13,6 +13,20 @@ import pygame
 import zipfile
 from threading import Thread
 
+from . import gdf
+from .debug import Debug
+from .scene import GameScene
+from .object import GameObject
+from .component import Components
+
+
+# Класс загруженных данных проекта:
+class ProjectData:
+    def __init__(self, path: str, type: str, data: any) -> None:
+        self.path = path
+        self.type = type
+        self.data = data
+
 
 # Исключение в работе с проектом:
 class ProjectError(Exception): pass
@@ -24,14 +38,14 @@ class ProjectDamagedError(Exception): pass
 
 # Класс менеджера проекта:
 class ProjectManager:
-    def __init__(self, engine) -> None:
-        self.engine = engine
+    def __init__(self) -> None:
         self.path   = ""
         self.config = None
 
         # Для загрузки данных сцен:
-        self.scenes     = []
-        self.bad_scenes = []
+        self.scenes      = []
+        self.bad_scenes  = []
+        self.bad_objects = []
 
         # Для загрузки данных проекта:
         self.data         = []
@@ -164,9 +178,68 @@ class ProjectManager:
         if not os.path.isdir(os.path.join(self.path, ".proj")):
             raise ProjectError("The project could not be saved. The project folder is corrupted.")
 
+        Debug.log("Saving project config...", ProjectManager)
+
+        # Сохраняем данные о сценах, объектах и компонентах (конвертируя данные в json структуру):
+        try:
+            Debug.log("Saving project config: Converting scenes and its contents to json format...", ProjectManager)
+            scenes = []
+            for scn in self.scenes:
+                # Получаем данные из сцены:
+                scene_data = scn.__dict__.copy()
+                objects = []
+                Debug.log(
+                    f"Saving project config: Converting scenes: Scene: \"{scn.name}\" [{scn.id}]...",
+                    ProjectManager)
+
+                for obj in scn.objects:
+                    Debug.log(
+                        f"Saving project config: Converting scenes: Scene: \"{scn.name}\" [{scn.id}]: "
+                        f"Converting GameObject: \"{obj.name}\" [{obj.id}]...", ProjectManager)
+
+                    object_data = obj.__dict__.copy()
+                    components = {comp.__class__.__name__: comp.get_parameters() for comp in obj.components}
+                    object_data["components"] = components
+                    objects.append(object_data)
+
+                    Debug.log(
+                        f"Saving project config: Converting scenes: Scene: \"{scn.name}\" [{scn.id}]: "
+                        f"Converting GameObject: \"{obj.name}\" [{obj.id}]: Done!", ProjectManager)
+
+                # Добавляем сцену в список сцен:
+                scene_data["objects"] = objects
+                scenes.append(scene_data)
+
+                Debug.log(
+                    f"Saving project config: Converting scenes: Scene: \"{scn.name}\" [{scn.id}]: Done!",
+                    ProjectManager)
+
+            # Сохраняем сцены в конфигурации:
+            self.config["scenes"] = scenes
+        except Exception as error:
+            errtext = f"An error occurred when converting scenes: {error.__class__.__name__}: {error}"
+            Debug.error(errtext)
+            raise ProjectError(errtext)
+
+        # Загружаем старые данные, чтобы если при сохранении новых данных возникнет ошибка, записать старые данные:
+        with open(os.path.join(self.path, ".proj/project.json"), "r+", encoding="utf-8") as f:
+            old_config = json.load(f)
+
         # Пересоздаём конфигурационный файл:
-        with open(os.path.join(self.path, ".proj/project.json"), "w+", encoding="utf-8") as f:
-            json.dump(self.config, f, indent=4)
+        try:
+            # Сохраняем новые данные:
+            with open(os.path.join(self.path, ".proj/project.json"), "w+", encoding="utf-8") as f:
+                json.dump(self.config, f, indent=4)
+
+            Debug.log("Saving project config: Done!", ProjectManager)
+        except Exception as error:
+            # Записываем старые данные:
+            with open(os.path.join(self.path, ".proj/project.json"), "w+", encoding="utf-8") as f:
+                json.dump(old_config, f, indent=4)
+
+            errtext = f"An error occurred while saving the project configuration: {error.__class__.__name__}: {error}"
+            Debug.error(errtext)
+            raise ProjectError(errtext)
 
         return self
 
@@ -178,24 +251,68 @@ class ProjectManager:
                 # Обнуляем список плохих файлов:
                 self.bad_loaded = []
 
-                # Список файлов с типами и путями:
-                files = self.config["data"]
+                # Проход 1 - Генерация сцен, объектов и компонентов:
+                Debug.log("Loading project data: Pass 1: Scene generation...", ProjectManager)
+                self.load_process = "Pass 1: Scene generation..." ; time.sleep(0.25)
+                for scene in self.config["scenes"]:
+                    try:
+                        Debug.log(
+                            f"Loading project data: Pass 1: Scene generation: "
+                            f"\"{scene['name']}\" [{scene['id']}]", ProjectManager)
 
-                # Проход 1 - Подсчёт общего размера данных и проверка существования файлов:
-                self.engine.Debug.log("Loading project data: Pass 1 - Analysis of uploaded data...", ProjectManager)
-                self.load_process, total_size, valid_files = "Pass 1 - Analysis of uploaded data", 0, []
-                for file_info in files:
+                        # Создаём сцену:
+                        gamescene = GameScene(scene["id"], scene["name"])
+
+                        # Проходимся по объектам:
+                        for obj in scene["objects"]:
+                            try:
+                                Debug.log(
+                                    f"Loading project data: Pass 1: Scene generation: Creating object: "
+                                    f"\"{obj['name']}\" [{obj['id']}]", ProjectManager)
+
+                                # Но для начала надо сгенерировать список компонентов объекта:
+                                components = []
+                                for cname, cparams in obj["components"].items():
+                                    components.append(getattr(Components, cname)(**cparams))
+
+                                # Создаём игровой объект и добавляем в сцену:
+                                gamescene.add(GameObject(obj["id"], obj["name"], components))
+                            except Exception as error:
+                                self.bad_objects.append({"scene-id": scene["id"], "object-id": obj["id"]})
+                                Debug.error(
+                                    f"Loading project data: Pass 1: Scene generation: "
+                                    f"Creating object: ERROR: {error.__class__.__name__}: {error}",
+                                    ProjectManager)
+
+                        # Добавляем сцену в список сцен:
+                        self.scenes.append(gamescene)
+                    except Exception as error:
+                        self.bad_scenes.append({"scene-id": scene["id"]})
+                        Debug.error(
+                            f"Loading project data: Pass 1: Scene generation: "
+                            f"ERROR: {error.__class__.__name__}: {error}",
+                            ProjectManager)
+                    self.load_progbar += 100/len(self.config["scenes"])
+                    time.sleep((1/len(self.config["scenes"]))/4)
+
+                # Обнуляем шкалу прогресса:
+                self.load_progbar = 0
+
+                # Проход 2 - Подсчёт общего размера данных и проверка существования файлов:
+                Debug.log("Loading project data: Pass 2 - Analysis of uploaded data...", ProjectManager)
+                self.load_process, total_size, valid_files = "Pass 2 - Analysis of uploaded data", 0, []
+                for file_info in self.config["data"]:
                     for type, path in file_info.items():
                         full_path = os.path.join(self.path, path)
                         if os.path.isfile(full_path):
                             total_size += os.path.getsize(full_path)
                             valid_files.append([{type: path}, os.path.getsize(full_path)])
                         else: self.bad_loaded.append(file_info)
-                        self.load_progbar += 100/len(files)
-                        time.sleep((1/len(files))/4)
+                        self.load_progbar += 100/len(self.config["data"])
+                        time.sleep((1/len(self.config["data"]))/4)
                 if self.bad_loaded:
-                    self.engine.Debug.log(
-                        f"Loading project data: Pass 1: File not found: {self.bad_loaded}",
+                    Debug.error(
+                        f"Loading project data: Pass 2: File not found: {self.bad_loaded}",
                         ProjectManager
                     )
 
@@ -205,9 +322,9 @@ class ProjectManager:
                 # Обнуляем шкалу прогресса:
                 self.load_progbar = 0
 
-                # Проход 2 - Основной цикл загрузки:
-                self.engine.Debug.log("Loading project data: Pass 2 - Loading data...", ProjectManager)
-                self.load_process = "Pass 2 - Loading data" ; time.sleep(1)
+                # Проход 3 - Основной цикл загрузки:
+                Debug.log("Loading project data: Pass 3 - Loading data...", ProjectManager)
+                self.load_process = "Pass 3 - Loading data"
                 for file_info in valid_files:
                     for type, path in file_info.items():
                         self.load_process = path
@@ -217,7 +334,7 @@ class ProjectManager:
                         # Автоматический размер чанка данных (от 4кб до 64кб):
                         chunk_size = int(min(max(4096, file_size // 100), 65536))
 
-                        self.engine.Debug.log(
+                        Debug.log(
                             f"Loading project data: [Type: {type} | Chunk size={chunk_size} | Loading: {full_path}]",
                             ProjectManager
                         )
@@ -252,12 +369,12 @@ class ProjectManager:
                                     if not chunk: break
                                     file_data.extend(chunk)
                                     self.load_progbar += (len(chunk)/total_size)*100
-                            music = self.engine.gdf.audio.Music().load(io.BytesIO(file_data))
+                            music = gdf.audio.Music().load(io.BytesIO(file_data))
                             self.data.append({"type": type, "path": path, "data": music})
 
                         # Звуковой файл:
                         elif type == "sound":
-                            sound = self.engine.gdf.audio.Sound().load(full_path)
+                            sound = gdf.audio.Sound().load(full_path)
                             self.load_progbar += (file_size/total_size)*100
                             self.data.append({"type": type, "path": path, "data": sound})
 
@@ -270,14 +387,14 @@ class ProjectManager:
                                     file_data.extend(chunk)
                                     self.load_progbar += (len(chunk)/total_size)*100
                             self.load_process = f"Converting: {os.path.basename(full_path)}"
-                            self.engine.Debug.log(
+                            Debug.log(
                                 f"Loading project data: Converting: {os.path.basename(full_path)}...", ProjectManager)
-                            image = self.engine.gdf.graphics.Image((0, 0), pygame.image.load(io.BytesIO(file_data)))
+                            image = gdf.graphics.Image((0, 0), pygame.image.load(io.BytesIO(file_data)))
                             self.data.append({"type": type, "path": path, "data": image})
 
                         # Файл шрифта:
                         elif type == "font":
-                            font = self.engine.gdf.graphics.FontFile(full_path)
+                            font = gdf.graphics.FontFile(full_path)
                             with open(full_path, "rb") as f:
                                 while True:
                                     chunk = f.read(chunk_size)
@@ -291,18 +408,26 @@ class ProjectManager:
                         else: self.unknown_type.append(file_info)
 
                 if self.unknown_type:
-                    self.engine.Debug.log(f"Loading project data: Unknown types: {self.unknown_type}", ProjectManager)
+                    Debug.log(f"Loading project data: Unknown types: {self.unknown_type}", ProjectManager)
 
                 # Говорим что всё загружено:
-                self.engine.Debug.log("Loading project data: Done!", ProjectManager)
+                Debug.log("Loading project data: Done!", ProjectManager)
                 self.load_progbar = 100
                 self.load_process = "Done!"
                 time.sleep(1.0)
                 self.load_process = "Preparation of uploaded data..."
                 self.load_is_done = True
             except Exception as error:
-                self.engine.Debug.error(f"Loading project data: ERROR: {error}", ProjectManager)
+                Debug.error(f"Loading project data: ERROR: {error}", ProjectManager)
                 self.error_loading = error
 
         # Запускаем загрузку данных:
         Thread(target=thread_load_files, args=(self,), daemon=True).start()
+
+    # Получить загруженные данные из проекта используя путь:
+    def get_data(self, path: str) -> ProjectData:
+        path = os.path.normpath(path)
+        for data in self.data:
+            if os.path.normpath(data["path"]) == path:
+                return ProjectData(path, data["type"], data["data"])
+        return ProjectData("", "unknown", None)

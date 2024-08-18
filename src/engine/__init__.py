@@ -6,6 +6,7 @@
 # Импортируем:
 import os
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+import platform
 
 
 # Импортируем ядро:
@@ -25,6 +26,10 @@ from .gdf import utils
 def get_version() -> str: return "v0.1"
 
 
+# Получить версию питона:
+def get_python_version() -> str: return platform.python_version()
+
+
 # Получить мета данные для проекта:
 def get_meta_info() -> dict:
     return {
@@ -35,10 +40,18 @@ def get_meta_info() -> dict:
 
 
 # Импортируем скрипты:
+from . import component
 from . import crash_handler
 from . import debug
+from . import object
+from . import project_manager
+from . import scene
 
 
 # Импортируем основной функционал из скриптов:
-from .crash_handler import CrashHandler
-from .debug         import Debug
+from .component       import Components
+from .crash_handler   import CrashHandler
+from .debug           import Debug
+from .object          import GameObject
+from .project_manager import ProjectData, ProjectError, ProjectDamagedError, ProjectManager
+from .scene           import GameScene

@@ -50,7 +50,7 @@ class CrashHandler:
         file_name      = traceback.extract_tb(error.__traceback__)[-1].filename
         line_number    = traceback.extract_tb(error.__traceback__)[-1].lineno
 
-        debug.Debug.fatal(f"{type(error).__name__}: {error}", source)
+        debug.Debug.fatal(f"{type(error).__name__}: {error} [line: {line_number}]", source)
 
         # Текст кнопки для копирования ошибки:
         copy_button_text = "copy the error"

@@ -90,6 +90,12 @@ class EditorLauncher(Window):
     def start(self) -> None:
         engine.Debug.log("LaunchEditor: Initializing the window: Done!", EditorLauncher)
 
+        # Служебная информация:
+        engine.Debug.log(f"Platform: {engine.gdf.get_platform()}")
+        engine.Debug.log(f"Python Version: {engine.get_python_version()}")
+        engine.Debug.log(f"OpenGL Version: {self.window.get_opengl_version()}")
+        engine.Debug.log(f"OpenGL Renderer: {self.window.get_opengl_renderer()}")
+
         # Обработчик ввода:
         self.input = gdf.input.InputHandler(self.window)
 
@@ -106,7 +112,7 @@ class EditorLauncher(Window):
 
         # Загружаем данные о проекте:
         engine.Debug.log("LaunchEditor: Loading project config file...", EditorLauncher)
-        self.project = core.ProjectManager(engine).load("./data/templates/New Project/")
+        self.project = engine.ProjectManager().load("./data/templates/New Project/")
         engine.Debug.log("LaunchEditor: Loading project config file: Done!", EditorLauncher)
 
         # Тексты:
@@ -173,16 +179,19 @@ class EditorLauncher(Window):
         # Рисуем текст:
 
         # Название проекта:
-        Sprite2D(self.texts["project"]).render(-size.x//2+(128-self.texts["project"].width//2), -size.y//2+299)
+        y = 286
+        Sprite2D(self.texts["project"]).render(-size.x//2+(128-self.texts["project"].width//2), -size.y//2+y)
 
         # Описание проекта:
-        Sprite2D(self.texts["description"]).render(-size.x//2+(128-self.texts["description"].width//2), -size.y//2+275)
+        y = 264
+        Sprite2D(self.texts["description"]).render(-size.x//2+(128-self.texts["description"].width//2), -size.y//2+y)
 
-        # Описание проекта:
+        # Текст загрузки данных:
+        x, y = 16, 36
         load_prcs = self.project.load_process
         load_prcs = "..."+load_prcs[-46:] if len(load_prcs) > 48 else load_prcs
-        Sprite2D(self.texts["loading"]).render(-size.x//2+16, -size.y//2+48)
-        Sprite2D(self.font.get_texture_text(load_prcs, 9)).render(-size.x//2+16, -size.y//2+36)
+        Sprite2D(self.texts["loading"]).render(-size.x//2+x, -size.y//2+y+self.texts["loading"].height)
+        Sprite2D(self.font.get_texture_text(load_prcs, 9)).render(-size.x//2+x, -size.y//2+y)
 
         self.window.display()
 
@@ -234,7 +243,7 @@ def launch_editor() -> None:
 def main() -> None:
     engine.Debug.log("Program started...")
 
-    engine.Debug.log("First Steps: Performing the first steps of initializing the launch")
+    engine.Debug.log("First Steps: Performing the first steps of initializing the launch...")
     first_steps()
     engine.Debug.log("First Steps: Done!")
 
