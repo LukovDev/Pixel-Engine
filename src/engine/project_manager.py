@@ -55,6 +55,7 @@ class ProjectManager:
         # В целом для загрузки всех данных проекта:
         self.load_progbar  = 0
         self.load_process  = ""
+        self.load_stage    = [0, 3]
         self.load_is_done  = False
         self.error_loading = None
 
@@ -187,6 +188,10 @@ class ProjectManager:
             for scn in self.scenes:
                 # Получаем данные из сцены:
                 scene_data = scn.__dict__.copy()
+
+                # Не добавляем скрытые переменны (по типу _objects_dict_):
+                scene_data = {i[0]: i[1] for i in scene_data.items() if i[0].__class__ == str and i[0][0] != "_"}
+
                 objects = []
                 Debug.log(
                     f"Saving project config: Converting scenes: Scene: \"{scn.name}\" [{scn.id}]...",
@@ -198,6 +203,9 @@ class ProjectManager:
                         f"Converting GameObject: \"{obj.name}\" [{obj.id}]...", ProjectManager)
 
                     object_data = obj.__dict__.copy()
+                    # Не добавляем скрытые переменны (по типу _projmng_):
+                    object_data = {i[0]: i[1] for i in object_data.items() if i[0].__class__ == str and i[0][0] != "_"}
+
                     components = {comp.__class__.__name__: comp.get_parameters() for comp in obj.components}
                     object_data["components"] = components
                     objects.append(object_data)
@@ -251,13 +259,17 @@ class ProjectManager:
                 # Обнуляем список плохих файлов:
                 self.bad_loaded = []
 
+                # Обнуляем шкалу прогресса:
+                self.load_progbar  = 0
+                self.load_stage[0] = 1
+
                 # Проход 1 - Генерация сцен, объектов и компонентов:
-                Debug.log("Loading project data: Pass 1: Scene generation...", ProjectManager)
-                self.load_process = "Pass 1: Scene generation..." ; time.sleep(0.25)
+                Debug.log("Loading project data: Stage 1: Scene generation...", ProjectManager)
+                self.load_process = "Stage 1: Scene generation..." ; time.sleep(0.25)
                 for scene in self.config["scenes"]:
                     try:
                         Debug.log(
-                            f"Loading project data: Pass 1: Scene generation: "
+                            f"Loading project data: Stage 1: Scene generation: "
                             f"\"{scene['name']}\" [{scene['id']}]", ProjectManager)
 
                         # Создаём сцену:
@@ -267,20 +279,20 @@ class ProjectManager:
                         for obj in scene["objects"]:
                             try:
                                 Debug.log(
-                                    f"Loading project data: Pass 1: Scene generation: Creating object: "
+                                    f"Loading project data: Stage 1: Scene generation: Creating object: "
                                     f"\"{obj['name']}\" [{obj['id']}]", ProjectManager)
 
                                 # Но для начала надо сгенерировать список компонентов объекта:
                                 components = []
                                 for cname, cparams in obj["components"].items():
-                                    components.append(getattr(Components, cname)(**cparams))
+                                    components.append(getattr(Components, cname)(self, **cparams))
 
                                 # Создаём игровой объект и добавляем в сцену:
-                                gamescene.add(GameObject(obj["id"], obj["name"], components))
+                                gamescene.add(GameObject(*[v for k, v in obj.items() if k != "components"], components))
                             except Exception as error:
                                 self.bad_objects.append({"scene-id": scene["id"], "object-id": obj["id"]})
                                 Debug.error(
-                                    f"Loading project data: Pass 1: Scene generation: "
+                                    f"Loading project data: Stage 1: Scene generation: "
                                     f"Creating object: ERROR: {error.__class__.__name__}: {error}",
                                     ProjectManager)
 
@@ -289,18 +301,19 @@ class ProjectManager:
                     except Exception as error:
                         self.bad_scenes.append({"scene-id": scene["id"]})
                         Debug.error(
-                            f"Loading project data: Pass 1: Scene generation: "
+                            f"Loading project data: Stage 1: Scene generation: "
                             f"ERROR: {error.__class__.__name__}: {error}",
                             ProjectManager)
                     self.load_progbar += 100/len(self.config["scenes"])
                     time.sleep((1/len(self.config["scenes"]))/4)
 
                 # Обнуляем шкалу прогресса:
-                self.load_progbar = 0
+                self.load_progbar  = 0
+                self.load_stage[0] = 2
 
                 # Проход 2 - Подсчёт общего размера данных и проверка существования файлов:
-                Debug.log("Loading project data: Pass 2 - Analysis of uploaded data...", ProjectManager)
-                self.load_process, total_size, valid_files = "Pass 2 - Analysis of uploaded data", 0, []
+                Debug.log("Loading project data: Stage 2 - Analysis of uploaded data...", ProjectManager)
+                self.load_process, total_size, valid_files = "Stage 2 - Analysis of uploaded data", 0, []
                 for file_info in self.config["data"]:
                     for type, path in file_info.items():
                         full_path = os.path.join(self.path, path)
@@ -312,7 +325,7 @@ class ProjectManager:
                         time.sleep((1/len(self.config["data"]))/4)
                 if self.bad_loaded:
                     Debug.error(
-                        f"Loading project data: Pass 2: File not found: {self.bad_loaded}",
+                        f"Loading project data: Stage 2: File not found: {self.bad_loaded}",
                         ProjectManager
                     )
 
@@ -320,11 +333,12 @@ class ProjectManager:
                 valid_files = [i[0] for i in sorted(valid_files, key=lambda x: x[1], reverse=True)]
 
                 # Обнуляем шкалу прогресса:
-                self.load_progbar = 0
+                self.load_progbar  = 0
+                self.load_stage[0] = 3
 
                 # Проход 3 - Основной цикл загрузки:
-                Debug.log("Loading project data: Pass 3 - Loading data...", ProjectManager)
-                self.load_process = "Pass 3 - Loading data"
+                Debug.log("Loading project data: Stage 3 - Loading data...", ProjectManager)
+                self.load_process = "Stage 3 - Loading data"
                 for file_info in valid_files:
                     for type, path in file_info.items():
                         self.load_process = path
@@ -413,8 +427,7 @@ class ProjectManager:
                 # Говорим что всё загружено:
                 Debug.log("Loading project data: Done!", ProjectManager)
                 self.load_progbar = 100
-                self.load_process = "Done!"
-                time.sleep(1.0)
+                self.load_process = "Done!" ; time.sleep(0.5)
                 self.load_process = "Preparation of uploaded data..."
                 self.load_is_done = True
             except Exception as error:

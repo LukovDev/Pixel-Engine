@@ -27,10 +27,11 @@ class Components:
 
     # 2D Преобразование:
     class Transform2D(Component):
-        def __init__(self, position: vec2, scale: vec2, angle: float) -> None:
-            self.position = vec2(position)  # Позиция.
-            self.scale    = vec2(scale)     # Размер.
-            self.angle    = float(angle)    # Угол наклона.
+        def __init__(self, project_manager, position: vec2, scale: vec2, angle: float) -> None:
+            self._projmng_ = project_manager  # Менеджер проекта.
+            self.position  = vec2(position)   # Позиция.
+            self.scale     = vec2(scale)      # Размер.
+            self.angle     = float(angle)     # Угол наклона.
 
         # Получить словарь параметров:
         def get_parameters(self) -> dict:
@@ -42,5 +43,13 @@ class Components:
 
     # 2D Спрайт:
     class Sprite2D(Component):
-        def __init__(self, texture: Texture) -> None:
-            self.texture = texture
+        def __init__(self, project_manager, path: str) -> None:
+            self._projmng_ = project_manager                # Менеджер проекта.
+            self.path      = path                           # Путь до файла.
+            self._texture_ = self._projmng_.get_data(path)  # Получить файл из пути.
+
+        # Получить словарь параметров:
+        def get_parameters(self) -> dict:
+            return {
+                "path": str(self.path)
+            }

@@ -12,23 +12,29 @@ from .object import GameObject
 
 # Класс игровой сцены:
 class GameScene(scene.Scene):
-    def __init__(self, id: int, name: str, objects: list = None) -> None:
-        self.id      = int(id)
-        self.name    = name.strip()
-        self.objects = objects if objects is not None else []
-        self.objects = [self.objects] if not isinstance(self.objects, list) else self.objects
+    def __init__(self, id: int, name: str) -> None:
+        self.id             = int(id)
+        self.name           = str(name).strip()
+        self.objects        = []
+        self._objects_dict_ = {}
 
     # Добавить объект в список объектов:
     def add(self, object: GameObject | list) -> None:
         for obj in [object] if not isinstance(object, list) else object:
             if obj not in self.objects:
                 self.objects.append(obj)
+                self._objects_dict_[obj.id] = obj
 
     # Удалить объект из списка объектов:
     def remove(self, object: GameObject | list) -> None:
         for obj in [object] if not isinstance(object, list) else object:
             if obj in self.objects:
                 self.objects.remove(obj)
+                del self._objects_dict_[obj.id]
+
+    # Получить игровой объект по его id:
+    def get_object(self, id: int) -> GameObject | None:
+        return self._objects_dict_.get(id)
 
     # Вызывается при переключении на эту сцену:
     def start(self) -> None:

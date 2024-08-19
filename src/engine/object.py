@@ -10,9 +10,11 @@ from .component import Components
 
 # Класс игрового объекта:
 class GameObject:
-    def __init__(self, id: int, name: str, components: list = None) -> None:
+    def __init__(self, id: int, name: str, active: bool, static: bool, components: list = None) -> None:
         self.id         = int(id)
-        self.name       = name.strip()
+        self.name       = str(name).strip()
+        self.active     = bool(active)
+        self.static     = bool(static)
         self.components = components if components is not None else []
 
     # Добавить компонент в список компонентов:

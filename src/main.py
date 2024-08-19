@@ -121,12 +121,14 @@ class EditorLauncher(Window):
         self.texts = {
             "project":     [prjname[:24]+"..." if len(prjname) > 24 else prjname, 18],
             "description": [prjdesc[:48]+"..." if len(prjdesc) > 48 else prjdesc, 9],
-            "loading":     ["Loading file: ", 12],
         }
 
         # Преобразовываем тексты:
         for (key, val) in self.texts.items():
             self.texts[key] = self.font.get_texture_text(val[0], val[1])
+
+        # Обновляем статус активности в дискорд:
+        self.editor.discord_rpc.update(f"Project: {self.project.config['name']}", "In Editor Launcher")
 
         # Загружаем данные проекта:
         engine.Debug.log("LaunchEditor: Loading project data...", EditorLauncher)
@@ -190,7 +192,8 @@ class EditorLauncher(Window):
         x, y = 16, 36
         load_prcs = self.project.load_process
         load_prcs = "..."+load_prcs[-46:] if len(load_prcs) > 48 else load_prcs
-        Sprite2D(self.texts["loading"]).render(-size.x//2+x, -size.y//2+y+self.texts["loading"].height)
+        tf = self.font.get_texture_text(f"Loading stage: {self.project.load_stage[0]}/{self.project.load_stage[1]}", 12)
+        Sprite2D(tf).render(-size.x//2+x, -size.y//2+y+tf.height)
         Sprite2D(self.font.get_texture_text(load_prcs, 9)).render(-size.x//2+x, -size.y//2+y)
 
         self.window.display()

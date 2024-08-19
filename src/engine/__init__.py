@@ -43,6 +43,7 @@ def get_meta_info() -> dict:
 from . import component
 from . import crash_handler
 from . import debug
+from . import discord
 from . import object
 from . import project_manager
 from . import scene
@@ -52,6 +53,7 @@ from . import scene
 from .component       import Components
 from .crash_handler   import CrashHandler
 from .debug           import Debug
+from .discord         import DiscordRPCEngine
 from .object          import GameObject
 from .project_manager import ProjectData, ProjectError, ProjectDamagedError, ProjectManager
 from .scene           import GameScene

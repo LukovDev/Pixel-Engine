@@ -5,6 +5,7 @@
 
 # Импортируем скрипты:
 from . import editor_const
+from . import gizmos
 
 
 # Импортируем основной функционал из скриптов:
