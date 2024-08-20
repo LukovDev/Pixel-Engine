@@ -19,6 +19,11 @@ class Grid:
         self.all_alpha       = 1.0     # Общая альфа цветов.
         self.is_enabled_axis = True    # Включены ли линии осей.
         self.alpha_axis      = 1.0     # Альфа цветов линий осей.
+        self.vertices        = None    # Сетка.
+
+    # Создать сетку:
+    def create(self) -> "Grid":
+        self.destroy()
 
         # Создание сетки:
         self.vertices = np.array([])
@@ -29,8 +34,6 @@ class Grid:
             self.vertices = np.append(self.vertices, [-self.grid_size//2 * self.camera.meter, y * self.camera.meter, 0])
             self.vertices = np.append(self.vertices, [+self.grid_size//2 * self.camera.meter, y * self.camera.meter, 0])
 
-    # Создать сетку:
-    def create(self) -> "Grid":
         # Создание буфера вершин сетки для более быстрой отрисовки:
         for index in range(self.grids):
             vertex_buffer = gl.glGenBuffers(1)

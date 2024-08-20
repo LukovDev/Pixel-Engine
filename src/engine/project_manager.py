@@ -439,8 +439,8 @@ class ProjectManager:
 
     # Получить загруженные данные из проекта используя путь:
     def get_data(self, path: str) -> ProjectData:
+        data_dict = {os.path.normpath(d["path"]): d for d in self.data}
         path = os.path.normpath(path)
-        for data in self.data:
-            if os.path.normpath(data["path"]) == path:
-                return ProjectData(path, data["type"], data["data"])
+        if path in data_dict:
+            return ProjectData(path, data_dict[path]["type"], data_dict[path]["data"])
         return ProjectData("", "unknown", None)

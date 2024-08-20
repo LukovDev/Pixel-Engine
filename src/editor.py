@@ -140,7 +140,6 @@ class EditorApplication(Window):
 
     # Вызывается каждый кадр (игровая отрисовка):
     def render(self, delta_time: float) -> None:
-        self.camera.update()
         self.window.clear(*self.settings["clear-color"][:3])
 
         # Рисуем сцену:
@@ -149,6 +148,7 @@ class EditorApplication(Window):
         # Рисуем сетку:
         self.grid.render(delta_time, self.settings["clear-color"][:3])
 
+        self.camera.update()
         self.window.display()
 
     # Вызывается при изменении размера окна:

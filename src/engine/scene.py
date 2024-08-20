@@ -39,6 +39,7 @@ class GameScene(scene.Scene):
     # Вызывается при переключении на эту сцену:
     def start(self) -> None:
         for obj in self.objects:
+            if not obj.active: continue
             for comp in obj.components:
                 try: comp.start()
                 except Exception as error:
@@ -52,6 +53,7 @@ class GameScene(scene.Scene):
     # Вызывается каждый кадр (игровой цикл):
     def update(self, delta_time: float, event_list: list) -> None:
         for obj in self.objects:
+            if not (obj.active or obj.static): continue
             for comp in obj.components:
                 try: comp.update(delta_time)
                 except Exception as error:
@@ -65,6 +67,7 @@ class GameScene(scene.Scene):
     # Вызывается каждый кадр (игровая отрисовка):
     def render(self, delta_time: float) -> None:
         for obj in self.objects:
+            if not obj.active: continue
             for comp in obj.components:
                 try: comp.render(delta_time)
                 except Exception as error:
@@ -78,6 +81,7 @@ class GameScene(scene.Scene):
     # Вызывается при изменении размера окна:
     def resize(self, width: int, height: int) -> None:
         for obj in self.objects:
+            if not obj.active: continue
             for comp in obj.components:
                 try: comp.resize(width, height)
                 except Exception as error:
