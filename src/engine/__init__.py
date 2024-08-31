@@ -47,6 +47,7 @@ from . import discord
 from . import object
 from . import project_manager
 from . import scene
+from . import scene_manager
 
 
 # Импортируем основной функционал из скриптов:
@@ -57,3 +58,4 @@ from .discord         import DiscordRPCEngine
 from .object          import GameObject
 from .project_manager import ProjectData, ProjectError, ProjectDamagedError, ProjectManager
 from .scene           import GameScene
+from .scene_manager   import SceneManager

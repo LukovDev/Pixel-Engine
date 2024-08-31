@@ -251,10 +251,14 @@ class ProjectManager:
 
         return self
 
+    # Загрузить все данные проекта:
+    def load_all_data(self) -> "ProjectManager":
+        pass
+
     # Загрузить данные проекта:
     def load_data(self) -> "ProjectManager":
         # Загрузка данных в отдельном потоке:
-        def thread_load_files(self) -> None:
+        def thread_load_files() -> None:
             try:
                 # Обнуляем список плохих файлов:
                 self.bad_loaded = []
@@ -435,7 +439,7 @@ class ProjectManager:
                 self.error_loading = error
 
         # Запускаем загрузку данных:
-        Thread(target=thread_load_files, args=(self,), daemon=True).start()
+        Thread(target=thread_load_files, daemon=True).start()
 
     # Получить загруженные данные из проекта используя путь:
     def get_data(self, path: str) -> ProjectData:

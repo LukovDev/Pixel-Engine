@@ -12,9 +12,10 @@ from .object import GameObject
 
 # Класс игровой сцены:
 class GameScene(scene.Scene):
-    def __init__(self, id: int, name: str) -> None:
+    def __init__(self, id: int, name: str, data: list) -> None:
         self.id             = int(id)
         self.name           = str(name).strip()
+        self.data           = []
         self.objects        = []
         self._objects_dict_ = {}
 
